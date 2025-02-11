@@ -165,4 +165,41 @@ interface RootObject {
     const [a, b] = [expected, actual].map(removeWhiteSpace);
     assert.strictEqual(a, b);
   });
+
+  it("should use literal types for all properties", function () {
+    const json = {
+      str: "The meaning of life",
+      nbr: 42,
+    };
+
+    const expected = `
+      interface RootObject {
+        str: "The meaning of life";
+        nbr: 42;
+      }
+    `;
+    const actual = JsonToTS(json, { useLiteralTypes: true }).pop();
+    const [a, b] = [actual, expected].map(removeWhiteSpace);
+    assert.strictEqual(a, b);
+  });
+
+  it("should use literal types for selected properties", function () {
+    const json = {
+      str: "The meaning of life",
+      nbr: 42,
+      c: "c",
+    };
+
+    const expected = `
+      interface RootObject {
+        str: "The meaning of life";
+        nbr: 42;
+        c: string;
+      }
+    `;
+
+    const actual = JsonToTS(json, { useLiteralTypes: ["str", "nbr"] }).pop();
+    const [a, b] = [actual, expected].map(removeWhiteSpace);
+    assert.strictEqual(a, b);
+  });
 });

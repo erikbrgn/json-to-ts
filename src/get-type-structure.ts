@@ -1,8 +1,7 @@
 import * as hash from "hash.js";
 
-import { TypeDescription, TypeStructure } from "./model";
-import { isHash, getTypeDescriptionGroup, findTypeById, isArray, isObject, onlyUnique, isDate } from "./util";
-import { TypeGroup } from "./model";
+import { Options, TypeDescription, TypeGroup, TypeStructure } from "./model";
+import { findTypeById, getTypeDescriptionGroup, isArray, isDate, isHash, isObject, onlyUnique } from "./util";
 
 function createTypeDescription(typeObj: any | string[], isUnion: boolean): TypeDescription {
   if (isArray(typeObj)) {
@@ -75,6 +74,10 @@ function getSimpleTypeName(value: any): string {
   }
 }
 
+function getLiteralTypeName(value: any): string {
+  return JSON.stringify(value);
+}
+
 function getTypeGroup(value: any): TypeGroup {
   if (isDate(value)) {
     return TypeGroup.Date;
@@ -87,9 +90,9 @@ function getTypeGroup(value: any): TypeGroup {
   }
 }
 
-function createTypeObject(obj: any, types: TypeDescription[]): any {
+function createTypeObject(obj: any, types: TypeDescription[], useLiteralTypes?: Options["useLiteralTypes"]): any {
   return Object.entries(obj).reduce((typeObj, [key, value]) => {
-    const { rootTypeId } = getTypeStructure(value, types);
+    const { rootTypeId } = getTypeStructure(value, types, useLiteralTypes, key);
 
     return {
       ...typeObj,
@@ -228,11 +231,15 @@ function getInnerArrayType(typesOfArray: string[], types: TypeDescription[]): st
 
 export function getTypeStructure(
   targetObj: any, // object that we want to create types for
-  types: TypeDescription[] = []
+  types: TypeDescription[] = [],
+  useLiteralTypes: Options["useLiteralTypes"] = false, // added parameter for literal types
+  key?: string
 ): TypeStructure {
   switch (getTypeGroup(targetObj)) {
     case TypeGroup.Array:
-      const typesOfArray = (<any[]>targetObj).map((_) => getTypeStructure(_, types).rootTypeId).filter(onlyUnique);
+      const typesOfArray = (<any[]>targetObj)
+        .map((_) => getTypeStructure(_, types, useLiteralTypes, key).rootTypeId)
+        .filter(onlyUnique);
       const arrayInnerTypeId = getInnerArrayType(typesOfArray, types); // create "union type of array types"
       const typeId = getIdByType([arrayInnerTypeId], types); // create type "array of union type"
 
@@ -242,7 +249,7 @@ export function getTypeStructure(
       };
 
     case TypeGroup.Object:
-      const typeObj = createTypeObject(targetObj, types);
+      const typeObj = createTypeObject(targetObj, types, useLiteralTypes);
       const objType = getIdByType(typeObj, types);
 
       return {
@@ -251,8 +258,11 @@ export function getTypeStructure(
       };
 
     case TypeGroup.Primitive:
+      const shouldBeLiteral =
+        useLiteralTypes === true || (Array.isArray(useLiteralTypes) && useLiteralTypes.includes(key));
+
       return {
-        rootTypeId: getSimpleTypeName(targetObj),
+        rootTypeId: shouldBeLiteral ? getLiteralTypeName(targetObj) : getSimpleTypeName(targetObj),
         types,
       };
 

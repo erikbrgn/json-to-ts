@@ -36,6 +36,8 @@ export interface Options {
   rootName?: string;
   /** To generate using type alias instead of interface */
   useTypeAlias?: boolean;
+  // To use literal types for all or selected properties.
+  useLiteralTypes?: boolean | NameEntry["name"][];
 }
 
 export interface KeyMetaData {

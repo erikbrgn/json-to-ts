@@ -25,7 +25,7 @@ export default function JsonToTS(json: any, userOptions?: Options): string[] {
     throw new Error("Only (Object) and (Array of Object) are supported");
   }
 
-  const typeStructure = getTypeStructure(json);
+  const typeStructure = getTypeStructure(json, [], options.useLiteralTypes);
   /**
    * due to merging array types some types are switched out for merged ones
    * so we delete the unused ones here

@@ -1,6 +1,6 @@
 import * as assert from "assert";
-import { removeWhiteSpace } from "./util/index";
 import JsonToTS from "../src/index";
+import { assertExpectedTypesIncludesActual, removeWhiteSpace } from "./util/index";
 
 describe("Array type merging", function () {
   it("should work with arrays with same inner types", function () {
@@ -457,6 +457,57 @@ describe("Array type merging", function () {
       assert(expectedTypes.includes(noWhiteSpaceInterface));
     });
 
+    assert.strictEqual(interfaces.length, 1);
+  });
+
+  it("should handle literal types in array", function () {
+    const json = [
+      {
+        nameOrNumberOrDate: "marius",
+      },
+      {
+        nameOrNumberOrDate: [42, 1337, 9001],
+      },
+      {
+        nameOrNumberOrDate: [new Date()],
+      },
+    ];
+
+    const expectedTypes = [
+      `interface RootObject {
+        nameOrNumberOrDate: "marius" |Date[] | (1337 | 42 | 9001)[];
+      }`,
+    ].map(removeWhiteSpace);
+
+    const interfaces = JsonToTS(json, { useLiteralTypes: true });
+
+    assertExpectedTypesIncludesActual(interfaces, expectedTypes);
+    assert.strictEqual(interfaces.length, 1);
+  });
+
+  it("should handle literal types for specified properties and different object shapes", function () {
+    const json = [
+      {
+        nameOrNumbers: "marius",
+      },
+      {
+        nameOrNumbers: [42, 1337, 9001],
+      },
+      {
+        age: 42,
+      },
+    ];
+
+    const expectedTypes = [
+      `interface RootObject {
+        nameOrNumbers?: "marius" | (1337 | 42 | 9001)[];
+        age?: number;
+      }`,
+    ].map(removeWhiteSpace);
+
+    const interfaces = JsonToTS(json, { useLiteralTypes: ["nameOrNumbers"] });
+
+    assertExpectedTypesIncludesActual(interfaces, expectedTypes);
     assert.strictEqual(interfaces.length, 1);
   });
 });
