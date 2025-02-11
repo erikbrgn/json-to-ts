@@ -44,6 +44,7 @@ interface Cat {
 - Duplicate type prevention
 - Optional types
 - Array types
+- Literal types (for all primitives or specified by user)
 
 # Setup
 
